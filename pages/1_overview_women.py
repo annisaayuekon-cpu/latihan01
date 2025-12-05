@@ -134,13 +134,16 @@ with col_left:
     else:
         top10 = df_ind.sort_values("value", ascending=False).head(10)
 
-    fig_top = px.bar(
-        top10,
-        x="country",
-        y="value",
-        labels={"country": "Negara", "value": chosen_label},
-    )
-    st.plotly_chart(fig_top, use_container_width=True)
+    if not top10.empty:
+        fig_top = px.bar(
+            top10,
+            x="country",
+            y="value",
+            labels={"country": "Negara", "value": chosen_label},
+        )
+        st.plotly_chart(fig_top, use_container_width=True, key="top_chart")
+    else:
+        st.info("Tidak ada data untuk ditampilkan.")
 
 with col_right:
     st.markdown("Bottom 10 Negara")
@@ -149,10 +152,13 @@ with col_right:
     else:
         bottom10 = df_ind.sort_values("value", ascending=True).head(10)
 
-    fig_bottom = px.bar(
-        bottom10,
-        x="country",
-        y="value",
-        labels={"country": "Negara", "value": chosen_label},
-    )
-    st.plotly_chart(fig_bottom, use_container_width=True)
+    if not bottom10.empty:
+        fig_bottom = px.bar(
+            bottom10,
+            x="country",
+            y="value",
+            labels={"country": "Negara", "value": chosen_label},
+        )
+        st.plotly_chart(fig_bottom, use_container_width=True, key="bottom_chart")
+    else:
+        st.info("Tidak ada data untuk ditampilkan.")
