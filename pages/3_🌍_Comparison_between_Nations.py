@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import os
 
- =========================
+# =========================
 # TEMA PINK
 # =========================
 def apply_pink_theme():
@@ -61,9 +61,10 @@ MATERNAL_MORT_FILE = "MATERNAL MORTALITY.csv"
 # =========================
 def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
     """
-    Membaca file CSV World Bank versi kamu:
-    separator ; dan desimal ,
-    lalu ubah ke long format:
+    Baca file CSV World Bank versi kamu:
+    - separator ; (semicolon)
+    - desimal , (comma)
+    Ubah ke long format:
     country | country_code | year | value | indicator
     """
     path = os.path.join("data", filename)
@@ -74,12 +75,12 @@ def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
 
     df = pd.read_csv(
         path,
-        sep=";",       # file memakai ;
+        sep=";",
         engine="python",
-        decimal=",",   # desimal memakai koma
+        decimal=",",
     )
 
-    # Kolom tahun = kolom yang diawali angka (mis "1995" atau "1995 [YR1995]")
+    # Kolom tahun = kolom yang diawali 4 digit angka
     year_cols = [
         c for c in df.columns
         if str(c).strip()[:4].isdigit()
@@ -96,7 +97,6 @@ def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
         value_name="value",
     )
 
-    # Ambil empat digit pertama sebagai tahun
     df_long["year"] = df_long["year"].astype(str).str.slice(0, 4)
     df_long["year"] = pd.to_numeric(df_long["year"], errors="coerce")
     df_long["value"] = pd.to_numeric(df_long["value"], errors="coerce")
@@ -122,7 +122,7 @@ def load_all_data() -> pd.DataFrame:
     if all_df.empty:
         return all_df
 
-    # Samakan rentang tahun, mengikuti ketersediaan Maternal Mortality
+    # Samakan rentang tahun
     all_df = all_df[(all_df["year"] >= 1995) & (all_df["year"] <= 2023)]
 
     return all_df
@@ -131,7 +131,7 @@ def load_all_data() -> pd.DataFrame:
 # =========================
 # UI HALAMAN
 # =========================
-st.title("Country Comparison – Women Indicators")
+st.title("Comparison between Nations – Women Indicators")
 
 df = load_all_data()
 
@@ -140,7 +140,6 @@ if df.empty:
     st.stop()
 
 available_years = sorted(df["year"].unique())
-
 if not available_years:
     st.error("Tidak ada tahun yang tersedia dalam data.")
     st.stop()
@@ -178,7 +177,7 @@ if df_year.empty:
 
 st.subheader(f"Perbandingan Negara – {indicator_label} ({selected_year})")
 
-# Pilih banyak negara yang ingin ditampilkan
+# Filter negara (opsional)
 all_countries = sorted(df_year["country"].unique())
 selected_countries = st.multiselect(
     "Filter negara tertentu (kosongkan bila ingin memakai semua negara)",
@@ -192,11 +191,10 @@ if df_year.empty:
     st.warning("Tidak ada data setelah filter negara diterapkan.")
     st.stop()
 
-# Pilihan jumlah negara yang ditampilkan
 # Hitung jumlah negara setelah filter
 n_countries = len(df_year)
 
-# Kalau negara sedikit, tidak usah slider ribet
+# Jumlah negara yang ditampilkan
 if n_countries <= 5:
     top_n = n_countries
     st.caption(f"Menampilkan semua {n_countries} negara yang tersedia.")
@@ -209,7 +207,7 @@ else:
         value=min(20, max_allowed),
     )
 
-# Untuk maternal mortality, nilai lebih rendah berarti kinerja lebih baik
+# Sorting sesuai jenis indikator
 if indicator == "Maternal Mortality":
     df_sorted = df_year.sort_values("value", ascending=True).head(top_n)
     note_text = "Untuk maternal mortality, nilai yang lebih rendah berarti kinerja lebih baik."
@@ -235,4 +233,3 @@ table = df_sorted[["country", "value"]].rename(
 )
 
 st.dataframe(table, use_container_width=True)
-
