@@ -3,9 +3,46 @@ import pandas as pd
 import plotly.express as px
 import os
 
+# =========================
+# TEMA PINK
+# =========================
 def apply_pink_theme():
     st.markdown(
-        """<style> ... (blok CSS yang sama persis) ... </style>""",
+        """
+        <style>
+            .stApp {
+                background: radial-gradient(circle at top left, #ffe6f2 0%, #ffffff 40%, #ffd6eb 100%);
+            }
+            section[data-testid="stSidebar"] {
+                background-color: #ffe6f2 !important;
+            }
+            h1, h2, h3 {
+                color: #c2185b !important;
+            }
+            [data-testid="stMetric"] {
+                background-color: #ffffff !important;
+                border-radius: 12px !important;
+                border: 1px solid #f48fb1 !important;
+                padding: 12px 16px !important;
+            }
+            [data-baseweb="slider"] > div {
+                background-color: #f8bbd0 !important;
+            }
+            .stButton > button {
+                background-color: #f06292 !important;
+                color: white !important;
+                border-radius: 20px !important;
+                border: none !important;
+            }
+            .stButton > button:hover {
+                background-color: #ec407a !important;
+            }
+            .stDataFrame thead tr th {
+                background-color: #f8bbd0 !important;
+                color: #880e4f !important;
+            }
+        </style>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -25,8 +62,8 @@ MATERNAL_MORT_FILE = "MATERNAL MORTALITY.csv"
 def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
     """
     Membaca file CSV World Bank versi kamu:
-    - Separator ; (semicolon)
-    - Desimal , (comma)
+    - separator ; (semicolon)
+    - desimal , (comma)
     Lalu ubah ke long format:
     country | country_code | year | value | indicator
     """
@@ -43,7 +80,7 @@ def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
         decimal=",",   # desimal pakai koma
     )
 
-    # Kolom tahun = kolom yang diawali angka (mis. "1995", "1995 [YR1995]")
+    # Kolom tahun = kolom yang diawali angka (mis. "1995" atau "1995 [YR1995]")
     year_cols = [
         c for c in df.columns
         if str(c).strip()[:4].isdigit()
@@ -208,4 +245,3 @@ if pivot.empty:
     st.info("Tidak ada data tabel untuk negara ini.")
 else:
     st.dataframe(pivot, use_container_width=True)
-
