@@ -61,7 +61,16 @@ def load_all_data() -> pd.DataFrame:
 
 st.title("Overview – Women & Development")
 
-df = load_all_data()
+@st.cache_data
+def load_all_data() -> pd.DataFrame:
+    lfp = load_wb_indicator(FEMALE_LFP_FILE, "Female LFP")
+    edu = load_wb_indicator(FEMALE_EDU_FILE, "Female Secondary Enrolment")
+    mort = load_wb_indicator(MATERNAL_MORT_FILE, "Maternal Mortality")
+
+    all_df = pd.concat([lfp, edu, mort], ignore_index=True)
+    # samakan rentang tahun untuk semua indikator
+    all_df = all_df[(all_df["year"] >= 1995) & (all_df["year"] <= 2023)]
+    return all_df
 
 available_years = sorted(df["year"].unique())
 default_year = max(available_years) if available_years else None
