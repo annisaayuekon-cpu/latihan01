@@ -6,64 +6,54 @@ st.set_page_config(
     page_icon="👩",
 )
 
-# ========== THEME PINK ==========
-st.markdown(
-    """
-    <style>
-        /* Background utama app */
-        .stApp {
-            background: radial-gradient(circle at top left, #ffe6f2 0%, #ffffff 40%, #ffd6eb 100%);
-        }
+def apply_pink_theme():
+    st.markdown(
+        """
+        <style>
+            .stApp {
+                background: radial-gradient(circle at top left, #ffe6f2 0%, #ffffff 40%, #ffd6eb 100%);
+            }
 
-        /* Sidebar */
-        section[data-testid="stSidebar"] {
-            background-color: #ffe6f2 !important;
-        }
+            section[data-testid="stSidebar"] {
+                background-color: #ffe6f2 !important;
+            }
 
-        /* Judul utama */
-        h1, h2, h3 {
-            color: #c2185b !important;
-        }
+            h1, h2, h3 {
+                color: #c2185b !important;
+            }
 
-        /* Subheader dan teks penting */
-        .css-10trblm, .css-1v0mbdj {
-            color: #c2185b !important;
-        }
+            [data-testid="stMetric"] {
+                background-color: #ffffff !important;
+                border-radius: 12px !important;
+                border: 1px solid #f48fb1 !important;
+                padding: 12px 16px !important;
+            }
 
-        /* Metric cards */
-        [data-testid="stMetric"] {
-            background-color: #ffffff !important;
-            border-radius: 12px !important;
-            border: 1px solid #f48fb1 !important;
-            padding: 12px 16px !important;
-        }
+            [data-baseweb="slider"] > div {
+                background-color: #f8bbd0 !important;
+            }
 
-        /* Slider handle dan track (kira-kira) */
-        [data-baseweb="slider"] > div {
-            background-color: #f8bbd0 !important;
-        }
+            .stButton > button {
+                background-color: #f06292 !important;
+                color: white !important;
+                border-radius: 20px !important;
+                border: none !important;
+            }
 
-        /* Tombol */
-        .stButton > button {
-            background-color: #f06292 !important;
-            color: white !important;
-            border-radius: 20px !important;
-            border: none !important;
-        }
+            .stButton > button:hover {
+                background-color: #ec407a !important;
+            }
 
-        .stButton > button:hover {
-            background-color: #ec407a !important;
-        }
+            .stDataFrame thead tr th {
+                background-color: #f8bbd0 !important;
+                color: #880e4f !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        /* Dataframe header */
-        .stDataFrame thead tr th {
-            background-color: #f8bbd0 !important;
-            color: #880e4f !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+apply_pink_theme()
 
 st.title("Women & Development Dashboard")
 
