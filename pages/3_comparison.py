@@ -148,12 +148,21 @@ if df_year.empty:
     st.stop()
 
 # Pilihan jumlah negara yang ditampilkan
-top_n = st.slider(
-    "Tampilkan berapa negara di grafik",
-    min_value=5,
-    max_value=min(50, len(df_year)),
-    value=min(20, len(df_year)),
-)
+# Hitung jumlah negara setelah filter
+n_countries = len(df_year)
+
+# Kalau negara sedikit, tidak usah slider ribet
+if n_countries <= 5:
+    top_n = n_countries
+    st.caption(f"Menampilkan semua {n_countries} negara yang tersedia.")
+else:
+    max_allowed = min(50, n_countries)
+    top_n = st.slider(
+        "Tampilkan berapa negara di grafik",
+        min_value=5,
+        max_value=max_allowed,
+        value=min(20, max_allowed),
+    )
 
 # Untuk maternal mortality, nilai lebih rendah berarti kinerja lebih baik
 if indicator == "Maternal Mortality":
