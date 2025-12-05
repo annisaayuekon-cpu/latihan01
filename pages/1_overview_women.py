@@ -10,15 +10,13 @@ FEMALE_LFP_FILE = "FLFP.csv"
 MATERNAL_MORT_FILE = "MATERNAL MORTALITY.csv"
 
 def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
-    """
-    Membaca file CSV World Bank dan mengubah ke long format:
-    country | country_code | year | value | indicator
-    """
     path = os.path.join("data", filename)
-    df = pd.read_csv(path)
 
-    # Kolom tahun = kolom berisi angka (1960, 1961, dst)
-    year_cols = [c for c in df.columns if c.isdigit()]
+    # SKIP 4 baris pertama yang berisi metadata World Bank
+    df = pd.read_csv(path, skiprows=4)
+
+    # Kolom tahun = nama kolom yang isinya angka
+    year_cols = [c for c in df.columns if str(c).strip().isdigit()]
 
     df_long = df.melt(
         id_vars=["Country Name", "Country Code"],
@@ -35,6 +33,7 @@ def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
     df_long = df_long.dropna(subset=["value", "year"])
 
     return df_long
+
 
 @st.cache_data
 def load_all_data() -> pd.DataFrame:
