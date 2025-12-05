@@ -4,19 +4,32 @@ import plotly.express as px
 import os
 from typing import Dict
 
-# Nama file sesuai data yang kamu punya
+# nama file sesuai data kamu
 FEMALE_EDU_FILE = "FEMALE SECONDARY.csv"
 FEMALE_LFP_FILE = "FLFP.csv"
 MATERNAL_MORT_FILE = "MATERNAL MORTALITY.csv"
 
+
 def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
+    """
+    Baca file CSV World Bank versi kamu:
+    - separator pakai ; (semicolon)
+    - desimal pakai , (comma)
+    Lalu diubah ke long format:
+    country | country_code | year | value | indicator
+    """
     path = os.path.join("data", filename)
 
-    # SKIP 4 baris pertama yang berisi metadata World Bank
-    df = pd.read_csv(path, skiprows=4)
+    # sep=';' dan decimal=',' penting supaya angka terbaca float
+    df = pd.read_csv(
+        path,
+        sep=";",
+        engine="python",
+        decimal=",",
+    )
 
-    # Kolom tahun = nama kolom yang isinya angka
-    year_cols = [c for c in df.columns if str(c).strip().isdigit()]
+    # kolom tahun = semua kolom selain Country Name dan Country Code
+    year_cols = [c for c in df.columns if c not in ["Country Name", "Country Code"]]
 
     df_long = df.melt(
         id_vars=["Country Name", "Country Code"],
@@ -42,9 +55,9 @@ def load_all_data() -> pd.DataFrame:
     mort = load_wb_indicator(MATERNAL_MORT_FILE, "Maternal Mortality")
 
     all_df = pd.concat([lfp, edu, mort], ignore_index=True)
-    # Batas tahun biar fokus
-    all_df = all_df[all_df["year"] >= 1990]
+    all_df = all_df[all_df["year"] >= 1995]
     return all_df
+
 
 st.title("Overview – Women & Development")
 
@@ -63,7 +76,7 @@ df_year = df[df["year"] == selected_year]
 
 st.subheader(f"Ringkasan Global Indikator Perempuan – {selected_year}")
 
-# Ringkasan global per indikator
+# ringkasan global per indikator
 summary = (
     df_year.groupby("indicator")["value"]
     .agg(["mean", "min", "max"])
@@ -72,28 +85,25 @@ summary = (
 
 col1, col2, col3 = st.columns(3)
 
-# Female LFP
 lfp_row = summary[summary["indicator"] == "Female LFP"]
 if not lfp_row.empty:
     col1.metric(
         "Rata-rata Female Labor Force Participation (%)",
-        f"{lfp_row['mean'].iloc[0]:.1f}"
+        f"{lfp_row['mean'].iloc[0]:.1f}",
     )
 
-# Female Secondary Enrolment
 edu_row = summary[summary["indicator"] == "Female Secondary Enrolment"]
 if not edu_row.empty:
     col2.metric(
         "Rata-rata Female Secondary Enrolment (%)",
-        f"{edu_row['mean'].iloc[0]:.1f}"
+        f"{edu_row['mean'].iloc[0]:.1f}",
     )
 
-# Maternal Mortality
 mort_row = summary[summary["indicator"] == "Maternal Mortality"]
 if not mort_row.empty:
     col3.metric(
-        "Rata-rata Maternal Mortality (per 100.000 kelahiran)",
-        f"{mort_row['mean'].iloc[0]:.0f}"
+        "Rata-rata Maternal Mortality\n(per 100.000 kelahiran)",
+        f"{mort_row['mean'].iloc[0]:.0f}",
     )
 
 st.markdown("---")
@@ -120,7 +130,6 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.markdown("Top 10 Negara")
     if chosen_indicator == "Maternal Mortality":
-        # maternal mortality lebih baik jika lebih rendah
         top10 = df_ind.sort_values("value", ascending=True).head(10)
     else:
         top10 = df_ind.sort_values("value", ascending=False).head(10)
@@ -147,4 +156,3 @@ with col_right:
         labels={"country": "Negara", "value": chosen_label},
     )
     st.plotly_chart(fig_bottom, use_container_width=True)
-
