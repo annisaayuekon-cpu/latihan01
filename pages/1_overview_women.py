@@ -4,32 +4,48 @@ import plotly.express as px
 import os
 from typing import Dict
 
-# nama file sesuai data kamu
+# =========================
+# KONFIGURASI FILE DATA
+# =========================
 FEMALE_EDU_FILE = "FEMALE SECONDARY.csv"
 FEMALE_LFP_FILE = "FLFP.csv"
 MATERNAL_MORT_FILE = "MATERNAL MORTALITY.csv"
 
 
+# =========================
+# FUNGSI BACA DATA
+# =========================
 def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
     """
-    Baca file CSV World Bank versi kamu:
-    - separator pakai ; (semicolon)
-    - desimal pakai , (comma)
-    Lalu diubah ke long format:
+    Membaca file CSV World Bank versi kamu:
+    - Separator ; (semicolon)
+    - Desimal , (comma)
+    Lalu ubah ke long format:
     country | country_code | year | value | indicator
     """
     path = os.path.join("data", filename)
 
-    # sep=';' dan decimal=',' penting supaya angka terbaca float
+    if not os.path.exists(path):
+        st.error(f"File tidak ditemukan: {path}")
+        return pd.DataFrame(columns=["country", "country_code", "year", "value", "indicator"])
+
+    # Baca CSV
     df = pd.read_csv(
         path,
-        sep=";",
+        sep=";",       # penting, karena file kamu pakai ;
         engine="python",
-        decimal=",",
+        decimal=",",   # angka desimal pakai koma
     )
 
-    # kolom tahun = semua kolom selain Country Name dan Country Code
-    year_cols = [c for c in df.columns if c not in ["Country Name", "Country Code"]]
+    # Deteksi kolom tahun: kolom yang diawali angka (misal "1990", "1990 [YR1990]")
+    year_cols = [
+        c for c in df.columns
+        if str(c).strip()[:4].isdigit()
+    ]
+
+    if "Country Name" not in df.columns or "Country Code" not in df.columns:
+        st.error(f"Kolom 'Country Name' / 'Country Code' tidak ditemukan di {filename}")
+        return pd.DataFrame(columns=["country", "country_code", "year", "value", "indicator"])
 
     df_long = df.melt(
         id_vars=["Country Name", "Country Code"],
@@ -38,12 +54,18 @@ def load_wb_indicator(filename: str, indicator_label: str) -> pd.DataFrame:
         value_name="value",
     )
 
+    # Bersihkan kolom tahun (ambil 4 digit pertama)
+    df_long["year"] = df_long["year"].astype(str).str.slice(0, 4)
     df_long["year"] = pd.to_numeric(df_long["year"], errors="coerce")
+    df_long["value"] = pd.to_numeric(df_long["value"], errors="coerce")
+
     df_long["indicator"] = indicator_label
     df_long = df_long.rename(
         columns={"Country Name": "country", "Country Code": "country_code"}
     )
-    df_long = df_long.dropna(subset=["value", "year"])
+
+    # Buang baris tanpa tahun atau nilai
+    df_long = df_long.dropna(subset=["year", "value"])
 
     return df_long
 
@@ -55,37 +77,47 @@ def load_all_data() -> pd.DataFrame:
     mort = load_wb_indicator(MATERNAL_MORT_FILE, "Maternal Mortality")
 
     all_df = pd.concat([lfp, edu, mort], ignore_index=True)
-    all_df = all_df[all_df["year"] >= 1995]
+
+    if all_df.empty:
+        return all_df
+
+    # Batasi tahun yang dipakai supaya konsisten (menyesuaikan maternal mortality, max 2023)
+    all_df = all_df[(all_df["year"] >= 1995) & (all_df["year"] <= 2023)]
+
     return all_df
 
 
+# =========================
+# UI HALAMAN
+# =========================
 st.title("Overview – Women & Development")
 
-@st.cache_data
-def load_all_data() -> pd.DataFrame:
-    lfp = load_wb_indicator(FEMALE_LFP_FILE, "Female LFP")
-    edu = load_wb_indicator(FEMALE_EDU_FILE, "Female Secondary Enrolment")
-    mort = load_wb_indicator(MATERNAL_MORT_FILE, "Maternal Mortality")
+df = load_all_data()
 
-    all_df = pd.concat([lfp, edu, mort], ignore_index=True)
-    # samakan rentang tahun untuk semua indikator
-    all_df = all_df[(all_df["year"] >= 1995) & (all_df["year"] <= 2023)]
-    return all_df
+# Kalau data benar-benar kosong
+if df.empty:
+    st.error("Dataset kosong atau tidak berhasil dibaca. Periksa file di folder `data/`.")
+    st.stop()
 
 available_years = sorted(df["year"].unique())
-default_year = max(available_years) if available_years else None
+
+if not available_years:
+    st.error("Tidak ada tahun yang tersedia dalam data.")
+    st.stop()
+
+default_year = max(available_years)
 
 selected_year = st.sidebar.selectbox(
     "Pilih Tahun",
     options=available_years,
-    index=available_years.index(default_year) if default_year in available_years else 0,
+    index=available_years.index(default_year),
 )
 
 df_year = df[df["year"] == selected_year]
 
 st.subheader(f"Ringkasan Global Indikator Perempuan – {selected_year}")
 
-# ringkasan global per indikator
+# Ringkasan global per indikator
 summary = (
     df_year.groupby("indicator")["value"]
     .agg(["mean", "min", "max"])
@@ -94,26 +126,35 @@ summary = (
 
 col1, col2, col3 = st.columns(3)
 
+# Female LFP
 lfp_row = summary[summary["indicator"] == "Female LFP"]
 if not lfp_row.empty:
     col1.metric(
         "Rata-rata Female Labor Force Participation (%)",
         f"{lfp_row['mean'].iloc[0]:.1f}",
     )
+else:
+    col1.info("Tidak ada data LFP untuk tahun ini.")
 
+# Female Secondary Enrolment
 edu_row = summary[summary["indicator"] == "Female Secondary Enrolment"]
 if not edu_row.empty:
     col2.metric(
         "Rata-rata Female Secondary Enrolment (%)",
         f"{edu_row['mean'].iloc[0]:.1f}",
     )
+else:
+    col2.info("Tidak ada data Secondary Enrolment untuk tahun ini.")
 
+# Maternal Mortality
 mort_row = summary[summary["indicator"] == "Maternal Mortality"]
 if not mort_row.empty:
     col3.metric(
         "Rata-rata Maternal Mortality\n(per 100.000 kelahiran)",
         f"{mort_row['mean'].iloc[0]:.0f}",
     )
+else:
+    col3.info("Tidak ada data Maternal Mortality untuk tahun ini.")
 
 st.markdown("---")
 
@@ -139,6 +180,7 @@ col_left, col_right = st.columns(2)
 with col_left:
     st.markdown("Top 10 Negara")
     if chosen_indicator == "Maternal Mortality":
+        # untuk mortality, nilai rendah = lebih baik
         top10 = df_ind.sort_values("value", ascending=True).head(10)
     else:
         top10 = df_ind.sort_values("value", ascending=False).head(10)
